@@ -25,9 +25,45 @@ namespace Convenient_PoP
          */
         public void SlashHitHandler(Collider2D otherCollider, GameObject slash)
         {
-            if (otherCollider.name.StartsWith("White Palace Fly") || otherCollider.name.StartsWith("Soul Totem white_Infinte"))
+            var soulTotemFsm = otherCollider.gameObject.LocateMyFSM("soul_totem");
+            var whitePalaceFlyFsm = otherCollider.gameObject.LocateMyFSM("Control");
+            if (soulTotemFsm != null)
             {
-                HeroController.instance.AddMPCharge(PlayerData.instance.MPReserveMax);
+                // check if infinite, as they miss the "Mesh Renderer Off" & "Depleted" states
+                bool isInfinite = true;
+                foreach (var state in soulTotemFsm.FsmStates)
+                {
+                    if (state.Name is "Depleted" or "Mesh Renderer Off")
+                    {
+                        isInfinite = false;
+                    }
+                }
+
+                if (isInfinite)
+                {
+                    HeroController.instance.AddMPCharge(PlayerData.instance.GetInt(nameof(PlayerData.instance.MPReserveMax)));
+                }
+            }
+            else if (whitePalaceFlyFsm != null)
+            {
+                // check if actually white palace fly
+                int isWPFlyCount = 0;
+                List<string> wpFlyStates = new List<string>()
+                {
+                    "Init", "Idle", "Stationary", "Audio", "Wait", "Journal Update?", "Journal Entry?", "Wound"
+                };
+                foreach (var state in soulTotemFsm.FsmStates)
+                {
+                    if (!wpFlyStates.Contains(state.Name))
+                    {
+                        isWPFlyCount++;
+                    }
+                }
+
+                if (isWPFlyCount == wpFlyStates.Count)
+                {
+                    HeroController.instance.AddMPCharge(PlayerData.instance.GetInt(nameof(PlayerData.instance.MPReserveMax)));
+                }
             }
         }
     }
